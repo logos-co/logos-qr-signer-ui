@@ -1,0 +1,22 @@
+{
+  "name": "qr_signer_ui",
+  "display_name": "QR Wallets",
+  "version": "0.1.0",
+  "type": "ui_qml",
+  "interface": "universal",
+  "category": "wallet",
+  "description": "The QR signer's app: add an air-gapped wallet's accounts from its account code, such as a Keycard Shell's, Keystone's, Passport's or Jade's, and choose which ones Logos apps may use.",
+  "author": "Logos Core Team",
+  "main": "qr_signer_ui_plugin",
+  "icon": "src/icons/qr-signer.png",
+  "view": "qml/QrSignerView.qml",
+  "dependencies": [
+    { "name": "qr_signer_module", "version": "~0.1.0" }
+  ],
+  "codegen": { "rep": "src/qr_signer_ui.rep" },
+  "nix": {
+    "external_libraries": [],
+    "packages": { "build": [], "runtime": ["qt6.qtdeclarative"] },
+    "cmake": { "find_packages": [], "extra_sources": [], "extra_include_dirs": [], "extra_link_libraries": [] }
+  }
+}

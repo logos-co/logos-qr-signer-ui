@@ -1,0 +1,145 @@
+name: "Adding a QR wallet's accounts, in its app"
+output: qr-signer-ui-e2e.md
+release: ""
+
+intro: |
+  Air-gapped wallets such as the Keycard Shell, Keystone, Passport and Jade sign over animated QR
+  codes. Their app, `qr_signer_ui`, adds a wallet's accounts from the account code it shows, and
+  lets the person take them back. Only public keys are kept.
+
+  This doc-test drives the app headlessly. The QR scanner's helper runs in fake mode: instead of a
+  camera and a window, it talks to `qr-device-emulator`, a QR wallet in software that shows its
+  account code from the "test … junk" test phrase as pictures of QR codes. A real wallet is held up
+  to the camera instead.
+
+what_you_build: "The QR signer's app, the QR signer and scanner modules, and an emulated QR wallet, in Basecamp's standalone mode."
+
+what_you_learn:
+  - How a wallet's accounts are added from its code
+  - How the wallet is recognised from its code
+  - How accounts are taken back
+
+prerequisites:
+  - "**Nix** with flakes enabled."
+  - "**A Linux or macOS machine.** The app runs headless via `QT_QPA_PLATFORM=offscreen`, so no display or camera is needed."
+
+sections:
+  - title: "Build the pieces"
+    step: true
+    steps:
+      - title: "The host and the test driver"
+        run: |
+          set -euo pipefail
+          nix build 'github:logos-co/logos-basecamp#app-standalone' --no-write-lock-file -o result-basecamp
+          nix build 'github:logos-co/logos-qt-mcp' --no-write-lock-file -o result-mcp
+      - title: "The QR signer, the scanner it depends on, and the emulated wallet"
+        run: |
+          set -euo pipefail
+          nix build 'github:logos-co/logos-qr-signer-module/36168475074da6e91594be7369512655d61ac37c#install' --no-write-lock-file -o result-signer
+          nix build 'github:logos-co/logos-qr-scanner-module/3e2f7e8def39d4f0e89bf887d500482c58950820#install' --no-write-lock-file -o result-scanner
+          nix build 'github:logos-co/logos-qr-signer-module/36168475074da6e91594be7369512655d61ac37c#emulator' --no-write-lock-file -o result-emulator
+        code_block: |
+          nix build 'github:logos-co/logos-qr-signer-module#install' -o result-signer
+          nix build 'github:logos-co/logos-qr-scanner-module#install' -o result-scanner
+          nix build 'github:logos-co/logos-qr-signer-module#emulator' -o result-emulator
+      - title: "The app"
+        run: "nix build 'github:logos-co/logos-qr-signer-ui{release}#install' --no-write-lock-file -o result-ui"
+        code_block: "nix build 'github:logos-co/logos-qr-signer-ui#install' --no-write-lock-file -o result-ui"
+      - title: "Lay out the modules for the host"
+        run: |
+          set -euo pipefail
+          mkdir -p tree/modules
+          cp -rL result-signer/modules/* result-scanner/modules/* tree/modules/
+          chmod -R u+w tree
+          ls tree/modules result-ui/plugins
+        expect_contains:
+          - "qr_signer_module"
+          - "qr_scanner_module"
+          - "qr_signer_ui"
+
+  - title: "Add the wallet's accounts"
+    step: true
+    text: |
+      The emulated wallet listens on a local port, and `LOGOS_QR_HELPER_FAKE` points the scanner's
+      helper at it instead of the camera.
+    steps:
+      - title: "Start the emulated wallet"
+        run: "sh -c './result-emulator/bin/qr-device-emulator --listen 127.0.0.1:47331 > wallet.addr 2> wallet.log & echo $! > wallet.pid'; sleep 1; cat wallet.addr"
+        code_block: "qr-device-emulator --listen 127.0.0.1:47331 &"
+        expect_contains:
+          - "127.0.0.1:47331"
+      - title: "Add three accounts, and take one back"
+        ui_test:
+          launch: "env LOGOS_QR_HELPER_FAKE=127.0.0.1:47331 QT_FORCE_STDERR_LOGGING=1 QML_INSPECTOR_PORT=3768 ./result-basecamp/bin/LogosBasecamp --module ./result-ui --modules-dir ./tree/modules --user-dir ./userdir"
+          qt_mcp: "result-mcp"
+          launch_timeout: 600
+          tests:
+            - name: "The wallets it knows by name are offered"
+              action: wait_for
+              texts: ["As its code says", "Keycard Shell", "Another QR wallet"]
+              timeout: 30000
+
+            - name: "Nothing is offered yet"
+              action: wait_for
+              texts: ["No account offered yet."]
+              timeout: 10000
+              screenshot: "qr-signer-ui-start.png"
+
+            # Chosen by property: a click lands where the layout put the box, and these sit in a row.
+            - name: "Native segwit too"
+              action: set_property
+              find_by: "objectName"
+              find_value: "scanSegwit"
+              property: "checked"
+              value: true
+
+            - name: "And taproot"
+              action: set_property
+              find_by: "objectName"
+              find_value: "scanTaproot"
+              property: "checked"
+              value: true
+
+            - name: "Read the wallet's code"
+              action: click_object
+              find_value: "scanButton"
+
+            - name: "The code was read"
+              action: wait_for
+              texts: ["Added 3 accounts."]
+              timeout: 60000
+
+            - name: "They are listed"
+              action: wait_for
+              texts:
+                - "EVM — 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+                - "Bitcoin, native segwit (test) — m/84'/1'/0'"
+                - "Bitcoin, taproot (test) — m/86'/1'/0'"
+              timeout: 10000
+              screenshot: "qr-signer-ui-added.png"
+
+            - name: "Take the taproot account back"
+              action: click_object
+              find_value: "removeAccount_2"
+
+            - name: "Two remain"
+              action: expect_property
+              find_by: "objectName"
+              find_value: "accountRepeater"
+              property: "count"
+              value: 2
+              timeout: 10000
+              screenshot: "qr-signer-ui-removed.png"
+
+      - title: "What the module kept"
+        text: |
+          Public material only, and which wallet it is: the code named a Keycard Shell, so the
+          accounts follow that profile's limits when they sign.
+        run: "find userdir -name accounts.json -exec cat {} +"
+        expect_contains:
+          - "tpub"
+          - "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+          - "keycard_shell"
+
+      - title: "Stop the emulated wallet"
+        run: "kill $(cat wallet.pid)"
