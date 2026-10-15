@@ -224,12 +224,13 @@ Item {
 
         function line() {
             if (!started) return ""
-            if (root.working) return "Hold the wallet's account code up to the camera. The Logos QR window shows what it sees; Cancel there stops."
+            if (root.working) return "Hold the wallet's account code up to the camera. The Logos QR window shows what it sees."
             if (root.scanning.state === "done") {
                 var n = (root.scanning.accounts || []).length
                 return n === 1 ? "Account added." : "Added " + n + " accounts."
             }
             if (root.scanning.state === "failed") return "Not added: " + (root.scanning.error || "")
+            if (root.scanning.state === "cancelled") return "Stopped. Nothing was added."
             return ""
         }
 
@@ -283,8 +284,15 @@ Item {
                 LogosButton {
                     objectName: "addDone"
                     text: "Done"
-                    enabled: !root.working && !addSheet.submitting
+                    visible: !root.working
+                    enabled: !addSheet.submitting
                     onClicked: addSheet.close()
+                }
+                LogosButton {
+                    objectName: "stopScan"
+                    text: "Stop"
+                    visible: root.working
+                    onClicked: root.backend.cancelScan()
                 }
                 Item { Layout.fillWidth: true }
                 LogosButton {

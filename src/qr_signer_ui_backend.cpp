@@ -123,6 +123,16 @@ bool QrSignerUiBackend::scan(QString familiesJson, QString profile, QString labe
     return true;
 }
 
+bool QrSignerUiBackend::cancelScan()
+{
+    setLastError(QString());
+    if (m_job.isEmpty())
+        return false;
+    // The next poll reads the outcome: cancelled, or done if the code was read meanwhile.
+    const QJsonObject reply = parseObject(modules().qr_signer_module.cancel_scan(m_job));
+    return ok(reply, QStringLiteral("stop")) && reply.value(QStringLiteral("cancelled")).toBool();
+}
+
 void QrSignerUiBackend::poll()
 {
     if (m_job.isEmpty()) {
@@ -141,7 +151,7 @@ void QrSignerUiBackend::poll()
     reply.remove(QStringLiteral("ok"));
     reply.remove(QStringLiteral("job"));
     setScanJson(compact(reply));
-    if (state == QLatin1String("done") || state == QLatin1String("failed")) {
+    if (state != QLatin1String("scanning")) {
         m_poll.stop();
         m_job.clear();
         refresh();

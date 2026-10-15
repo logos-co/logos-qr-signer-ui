@@ -2143,17 +2143,17 @@
         "qr_scanner_module": "qr_scanner_module"
       },
       "locked": {
-        "lastModified": 1792029227,
-        "narHash": "sha256-USLlCe2/baAXVavEuktls420Umd6hytwPSBgELRfk3g=",
+        "lastModified": 1792073870,
+        "narHash": "sha256-70Z7x9uxHNtQoiDh/OLeBnxqJA9PlgQuhsruJ9nRhD4=",
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "c8c9790532541d3e2bcc15740552033c02282d99",
+        "rev": "a70b81e0c81c0df8e199e3a6d1027d3537a7a56e",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "c8c9790532541d3e2bcc15740552033c02282d99",
+        "rev": "a70b81e0c81c0df8e199e3a6d1027d3537a7a56e",
         "type": "github"
       }
     },

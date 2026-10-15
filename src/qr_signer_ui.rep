@@ -10,13 +10,16 @@ class QrSignerUi
     // The wallets, by master fingerprint, each with its accounts, public material only:
     // `[{ fingerprint, profile, label, accounts }]`.
     PROP(QString walletsJson="[]" READONLY)
-    // The scan under way or last finished: `{ state, accounts?, error? }`, `{}` before any.
+    // The scan under way or last finished: `{ state, accounts?, error? }`, `{}` before any;
+    // `state` is scanning, done, failed or cancelled.
     PROP(QString scanJson="{}" READONLY)
 
     SLOT(void refresh())
     // Read a wallet's account code: `families` is a JSON list of evm, bitcoin, bitcoin_taproot;
     // an empty `profile` lets the code say which wallet it is.
     SLOT(bool scan(QString familiesJson, QString profile, QString label))
+    // Stop the scan under way; `scanJson` then says `cancelled`.
+    SLOT(bool cancelScan())
     SLOT(bool removeAccount(QString id))
     // A blank name clears it.
     SLOT(bool renameAccount(QString id, QString label))

@@ -6,7 +6,7 @@
     logos-module-builder.url = "github:logos-co/logos-module-builder/ac4ff31674bef3860ef10c2883e719452e573418";
     # Pinned to the module's first branch until it reaches main.
     qr_signer_module = {
-      url = "github:logos-co/logos-qr-signer-module/c8c9790532541d3e2bcc15740552033c02282d99";
+      url = "github:logos-co/logos-qr-signer-module/a70b81e0c81c0df8e199e3a6d1027d3537a7a56e";
       inputs.logos-module-builder.follows = "logos-module-builder";
     };
   };
