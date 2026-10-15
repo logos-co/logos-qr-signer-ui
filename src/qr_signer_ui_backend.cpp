@@ -48,7 +48,8 @@ void QrSignerUiBackend::onContextReady()
     modules().qr_signer_module.onSigner_accounts_changed([this](auto) {
         QTimer::singleShot(0, this, [this] { refresh(); });
     });
-    m_poll.setInterval(500);
+    // Often enough for "a code is in view" to follow the wallet as it moves.
+    m_poll.setInterval(250);
     QObject::connect(&m_poll, &QTimer::timeout, this, [this] { poll(); });
     const QJsonObject profiles = parseObject(modules().qr_signer_module.profiles());
     if (ok(profiles, QStringLiteral("wallets")))
@@ -111,9 +112,14 @@ bool QrSignerUiBackend::scan(QString familiesJson, QString profile, QString labe
         p.insert(QStringLiteral("profile"), profile);
     if (!label.trimmed().isEmpty())
         p.insert(QStringLiteral("label"), label.trimmed());
+    // Claimed before the scan starts, so the scanner reads it here instead of in its window. With
+    // no scanner, or one that won't have this app draw, the answer is no handle: the window, as before.
+    const QString h = modules().qr_scanner_module.presenter_attach();
+    m_present = h.startsWith(QStringLiteral("prs_")) ? h : QString();
     const QJsonObject reply = parseObject(modules().qr_signer_module.scan_accounts(
         QString::fromUtf8(QJsonDocument(p).toJson(QJsonDocument::Compact))));
     if (!ok(reply, QStringLiteral("scan"))) {
+        letScannerGo();
         setScanJson(failed(lastError()));
         return false;
     }
@@ -144,6 +150,7 @@ void QrSignerUiBackend::poll()
         // Say so where the scan is shown, rather than leave it waiting.
         m_poll.stop();
         m_job.clear();
+        letScannerGo();
         setScanJson(failed(lastError()));
         return;
     }
@@ -154,8 +161,27 @@ void QrSignerUiBackend::poll()
     if (state != QLatin1String("scanning")) {
         m_poll.stop();
         m_job.clear();
+        letScannerGo();
         refresh();
+        return;
     }
+    if (!m_present.isEmpty()) {
+        // How the camera reads the code: whether one is in view, and the parts read. No picture.
+        QJsonObject v = parseObject(modules().qr_scanner_module.presenter_view(m_present, QString()));
+        if (v.value(QStringLiteral("ok")).toBool()) {
+            v.remove(QStringLiteral("ok"));
+            setScanViewJson(compact(v));
+        }
+    }
+}
+
+void QrSignerUiBackend::letScannerGo()
+{
+    setScanViewJson(QStringLiteral("{}"));
+    if (m_present.isEmpty())
+        return;
+    modules().qr_scanner_module.presenter_detach(m_present);
+    m_present.clear();
 }
 
 bool QrSignerUiBackend::removeAccount(QString id)

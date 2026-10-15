@@ -2117,6 +2117,27 @@
     "qr_scanner_module": {
       "inputs": {
         "logos-module-builder": [
+          "logos-module-builder"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792094694,
+        "narHash": "sha256-RtuopucKXCgsJCAfxwHqO4bhViAmEzMR7yqIJrpqllE=",
+        "owner": "logos-co",
+        "repo": "logos-qr-scanner-module",
+        "rev": "58406b3a98678d99bd70674cdd4df5bcb1f7c934",
+        "type": "github"
+      },
+      "original": {
+        "owner": "logos-co",
+        "repo": "logos-qr-scanner-module",
+        "rev": "58406b3a98678d99bd70674cdd4df5bcb1f7c934",
+        "type": "github"
+      }
+    },
+    "qr_scanner_module_2": {
+      "inputs": {
+        "logos-module-builder": [
           "qr_signer_module",
           "logos-module-builder"
         ]
@@ -2140,26 +2161,27 @@
         "logos-module-builder": [
           "logos-module-builder"
         ],
-        "qr_scanner_module": "qr_scanner_module"
+        "qr_scanner_module": "qr_scanner_module_2"
       },
       "locked": {
-        "lastModified": 1792073870,
-        "narHash": "sha256-70Z7x9uxHNtQoiDh/OLeBnxqJA9PlgQuhsruJ9nRhD4=",
+        "lastModified": 1792077407,
+        "narHash": "sha256-GaYLBHcd1gB1JxuePOJ2Ei9kO1R9g1lhlBeje/b4f2Y=",
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "a70b81e0c81c0df8e199e3a6d1027d3537a7a56e",
+        "rev": "62616c7924a25e596c87d5bb1beee7bfbece28a8",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "a70b81e0c81c0df8e199e3a6d1027d3537a7a56e",
+        "rev": "62616c7924a25e596c87d5bb1beee7bfbece28a8",
         "type": "github"
       }
     },
     "root": {
       "inputs": {
         "logos-module-builder": "logos-module-builder",
+        "qr_scanner_module": "qr_scanner_module",
         "qr_signer_module": "qr_signer_module"
       }
     },

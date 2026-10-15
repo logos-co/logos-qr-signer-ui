@@ -10,6 +10,12 @@ Everything goes through [`qr_signer_module`](https://github.com/logos-co/logos-q
 which reads codes through [`qr_scanner_module`](https://github.com/logos-co/logos-qr-scanner-module):
 the camera is asked for in the name of Logos QR, never this app's.
 
+The account code is read in the Add dialog, not in a window of the scanner's. While it reads, this app
+holds the scanner's claim on drawing that scan (`qr_scanner_module` is an optional dependency). The
+dialog then says whether a code is in view and how many parts are read: no picture comes here. The
+scanner lets this app draw only the scans `qr_signer_module` starts. A request to sign, with its codes,
+is drawn by the Signer app.
+
 The layout follows [`logos-keycard-ui`](https://github.com/logos-co/logos-keycard-ui)'s: a card per wallet,
 its accounts inside, adding and managing in dialogs.
 

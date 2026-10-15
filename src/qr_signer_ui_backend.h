@@ -29,8 +29,12 @@ private:
     /// Surface the module's refusal and report whether the call succeeded.
     bool ok(const QJsonObject &reply, const QString &context);
     void poll();
+    /// The scan is over: the scanner draws its sessions where it would again.
+    void letScannerGo();
 
     QString m_job;
+    /// The scanner's handle for this app's claim on drawing the scan; empty when the window draws it.
+    QString m_present;
     QTimer m_poll;
     // The accounts as last read, for forgetting a wallet's.
     QJsonArray m_accounts;

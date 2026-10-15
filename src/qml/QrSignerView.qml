@@ -29,6 +29,9 @@ Item {
     readonly property var profiles: ready ? j(backend.profilesJson, "[]") : []
     readonly property var wallets: ready ? j(backend.walletsJson, "[]") : []
     readonly property var scanning: ready ? j(backend.scanJson, "{}") : ({})
+    // How the camera reads the code, while this app draws the scan: no picture, only whether a code
+    // is in view and the parts read.
+    readonly property var scanView: ready ? j(backend.scanViewJson, "{}") : ({})
     readonly property bool working: scanning.state === "scanning"
     property string selectedFingerprint: ""
     readonly property var wallet: wallets.find(function(w) { return w.fingerprint === root.selectedFingerprint }) || null
@@ -224,6 +227,14 @@ Item {
 
         function line() {
             if (!started) return ""
+            if (root.working && root.scanView.active === true) {
+                var s = root.scanView.seeing === true
+                        ? "A code is in view: hold it steady."
+                        : "No code in view yet: hold the wallet's account code up to the camera."
+                if ((root.scanView.expected || 0) > 0)
+                    s += " Read " + (root.scanView.received || 0) + " of " + root.scanView.expected + " parts."
+                return s
+            }
             if (root.working) return "Hold the wallet's account code up to the camera. The Logos QR window shows what it sees."
             if (root.scanning.state === "done") {
                 var n = (root.scanning.accounts || []).length

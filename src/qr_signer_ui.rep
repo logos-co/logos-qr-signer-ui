@@ -13,6 +13,9 @@ class QrSignerUi
     // The scan under way or last finished: `{ state, accounts?, error? }`, `{}` before any;
     // `state` is scanning, done, failed or cancelled.
     PROP(QString scanJson="{}" READONLY)
+    // How the camera reads the code while this app draws the scan, from qr_scanner_module (OPTIONAL):
+    // `{ active, seeing, received?, expected?, in_window }`. No picture. `{}` when the window draws it.
+    PROP(QString scanViewJson="{}" READONLY)
 
     SLOT(void refresh())
     // Read a wallet's account code: `families` is a JSON list of evm, bitcoin, bitcoin_taproot;

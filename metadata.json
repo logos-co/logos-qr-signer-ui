@@ -13,6 +13,9 @@
   "dependencies": [
     { "name": "qr_signer_module", "version": "~0.1.0" }
   ],
+  "optional_dependencies": [
+    { "name": "qr_scanner_module", "version": "~0.1.0" }
+  ],
   "codegen": { "rep": "src/qr_signer_ui.rep" },
   "nix": {
     "external_libraries": [],
