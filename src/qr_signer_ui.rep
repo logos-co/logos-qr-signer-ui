@@ -7,8 +7,9 @@ class QrSignerUi
 
     // `[{ name, label }]`: the wallets the signer knows by name.
     PROP(QString profilesJson="[]" READONLY)
-    // The accounts offered to apps, public material only.
-    PROP(QString accountsJson="[]" READONLY)
+    // The wallets, by master fingerprint, each with its accounts, public material only:
+    // `[{ fingerprint, profile, label, accounts }]`.
+    PROP(QString walletsJson="[]" READONLY)
     // The scan under way or last finished: `{ state, accounts?, error? }`, `{}` before any.
     PROP(QString scanJson="{}" READONLY)
 
@@ -17,4 +18,8 @@ class QrSignerUi
     // an empty `profile` lets the code say which wallet it is.
     SLOT(bool scan(QString familiesJson, QString profile, QString label))
     SLOT(bool removeAccount(QString id))
+    // A blank name clears it.
+    SLOT(bool renameAccount(QString id, QString label))
+    // Stop offering every account of the wallet with this fingerprint. Nothing on it changes.
+    SLOT(bool forgetWallet(QString fingerprint))
 }

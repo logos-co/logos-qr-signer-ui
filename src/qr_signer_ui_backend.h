@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
 #include <QString>
@@ -17,6 +18,8 @@ public:
     void refresh() override;
     bool scan(QString familiesJson, QString profile, QString label) override;
     bool removeAccount(QString id) override;
+    bool renameAccount(QString id, QString label) override;
+    bool forgetWallet(QString fingerprint) override;
 
 protected:
     void onContextReady() override;
@@ -28,4 +31,6 @@ private:
 
     QString m_job;
     QTimer m_poll;
+    // The accounts as last read, for forgetting a wallet's.
+    QJsonArray m_accounts;
 };

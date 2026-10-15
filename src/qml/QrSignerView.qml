@@ -4,8 +4,8 @@ import QtQuick.Layouts 1.15
 import Logos.Controls
 import Logos.Theme
 
-// The QR signer's app: add an air-gapped wallet's accounts from its account code, and choose which
-// ones Logos apps may use. A .rep SLOT answers a pending reply, so calls go through logos.watch.
+// The QR signer's app: air-gapped wallets that sign over QR codes, one card a wallet, its accounts
+// added from the code it shows. A .rep SLOT answers a pending reply, so calls go through logos.watch.
 Item {
     id: root
     objectName: "qrSignerRoot"
@@ -17,6 +17,7 @@ Item {
 
     // Writable, fed by the signal: a binding with a function call would latch false at creation.
     property bool ready: false
+    Component.onCompleted: ready = backend !== null && logos.isViewModuleReady("qr_signer_ui")
     Connections {
         target: logos
         function onViewModuleReadyChanged(moduleName, isReady) {
@@ -26,158 +27,466 @@ Item {
 
     function j(t, fb) { try { return JSON.parse(t && t.length ? t : fb) } catch (e) { return JSON.parse(fb) } }
     readonly property var profiles: ready ? j(backend.profilesJson, "[]") : []
-    readonly property var accounts: ready ? j(backend.accountsJson, "[]") : []
+    readonly property var wallets: ready ? j(backend.walletsJson, "[]") : []
     readonly property var scanning: ready ? j(backend.scanJson, "{}") : ({})
-    readonly property bool waiting: scanning.state === "scanning"
-    // Empty: the wallet's code says which wallet it is.
-    property string profile: ""
+    readonly property bool working: scanning.state === "scanning"
+    property string selectedFingerprint: ""
+    readonly property var wallet: wallets.find(function(w) { return w.fingerprint === root.selectedFingerprint }) || null
 
+    function walletName(w) {
+        if (!w) return "QR wallet"
+        return (w.label || "QR wallet") + (w.fingerprint ? " · " + w.fingerprint : "")
+    }
     function familyWords(f) {
-        return f === "evm" ? "EVM" : f === "bitcoin" ? "Bitcoin, native segwit" : "Bitcoin, taproot"
+        return f === "evm" ? "Ethereum" : f === "bitcoin" ? "Bitcoin · Native SegWit" : "Bitcoin · Taproot"
+    }
+    function shortKey(k) { return k ? k.slice(0, 8) + "…" + k.slice(-6) : "" }
+    function count(n) { return n + (n === 1 ? " account" : " accounts") }
+    function openAdd(w) {
+        root.selectedFingerprint = w ? w.fingerprint : ""
+        addSheet.open()
     }
 
-    function accountName(a) {
-        var test = a.family !== "evm" && (a.path || "").indexOf("/1'/") >= 0
-        return (a.label || root.familyWords(a.family)) + (test ? " (test)" : "")
-    }
-
-    function scanLine() {
-        if (root.waiting)
-            return "Hold the wallet's account code up to the camera. On a Keycard Shell: Connect software wallet."
-        if (root.scanning.state === "done") {
-            var n = (root.scanning.accounts || []).length
-            return "Added " + n + (n === 1 ? " account." : " accounts.")
-        }
-        if (root.scanning.state === "failed") return "Not added: " + (root.scanning.error || "")
-        return ""
-    }
-
-    ColumnLayout {
+    LogosScrollView {
+        id: scroll
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium
-        spacing: Theme.spacing.small
+        contentWidth: availableWidth
 
-        LogosText { text: "QR Wallets"; font.pixelSize: 22 }
+        ColumnLayout {
+            width: scroll.availableWidth
+            spacing: Theme.spacing.medium
 
-        LogosText {
-            objectName: "qrNote"
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            color: Theme.palette.textSecondary
-            text: "Air-gapped wallets that sign over QR codes, such as the Keycard Shell, Keystone, "
-                  + "Passport and Jade. Their keys never leave them: each request is shown here as a "
-                  + "code for the wallet to scan, and its answer is read back through the camera."
-        }
-
-        // ── adding a wallet's accounts ───────────────────────────────────────────
-        LogosText { text: "Add a QR wallet"; font.bold: true }
-        LogosText { text: "Which wallet"; color: Theme.palette.textSecondary }
-        Flow {
-            Layout.fillWidth: true
-            spacing: Theme.spacing.small
-            ButtonGroup { id: walletGroup }
-            LogosRadioButton {
-                objectName: "walletFromCode"
-                ButtonGroup.group: walletGroup
-                text: "As its code says"
-                checked: true
-                onClicked: root.profile = ""
-            }
-            Repeater {
-                model: root.profiles
-                delegate: LogosRadioButton {
-                    objectName: "wallet_" + modelData.name
-                    ButtonGroup.group: walletGroup
-                    text: modelData.label
-                    onClicked: root.profile = modelData.name
-                }
-            }
-        }
-        RowLayout {
-            spacing: Theme.spacing.small
-            LogosCheckbox { id: evmBox; objectName: "scanEvm"; text: "EVM"; checked: true }
-            LogosCheckbox { id: segwitBox; objectName: "scanSegwit"; text: "Bitcoin, native segwit" }
-            LogosCheckbox { id: taprootBox; objectName: "scanTaproot"; text: "Bitcoin, taproot" }
-        }
-        LogosTextField {
-            id: labelField
-            objectName: "scanLabel"
-            Layout.fillWidth: true
-            placeholderText: "Name (optional)"
-        }
-        LogosText {
-            objectName: "scanNote"
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            color: Theme.palette.textSecondary
-            text: "The accounts come from the code the wallet shows, on the network it is set to. "
-                  + "Only public keys are kept, and the camera is asked for in the name of Logos QR."
-        }
-        LogosButton {
-            objectName: "scanButton"
-            text: "Read the wallet's code"
-            enabled: root.ready && !root.waiting
-                     && (evmBox.checked || segwitBox.checked || taprootBox.checked)
-            onClicked: {
-                var families = []
-                if (evmBox.checked) families.push("evm")
-                if (segwitBox.checked) families.push("bitcoin")
-                if (taprootBox.checked) families.push("bitcoin_taproot")
-                logos.watch(root.backend.scan(JSON.stringify(families), root.profile, labelField.text),
-                            function (started) {})
-            }
-        }
-        LogosText {
-            objectName: "scanLine"
-            Layout.fillWidth: true
-            visible: text !== ""
-            wrapMode: Text.WordWrap
-            textFormat: Text.PlainText
-            color: root.scanning.state === "failed" ? Theme.palette.error : Theme.palette.text
-            text: root.scanLine()
-        }
-
-        // ── the accounts offered ─────────────────────────────────────────────────
-        LogosText { text: "Offered to apps"; font.bold: true }
-        LogosText {
-            objectName: "noAccounts"
-            visible: root.ready && root.accounts.length === 0
-            color: Theme.palette.textSecondary
-            text: "No account offered yet."
-        }
-        Repeater {
-            id: accountRepeater
-            objectName: "accountRepeater"
-            model: root.accounts
-            delegate: RowLayout {
+            RowLayout {
                 Layout.fillWidth: true
-                spacing: Theme.spacing.small
-                LogosText {
-                    objectName: "accountLine_" + index
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    elide: Text.ElideRight
-                    textFormat: Text.PlainText
-                    text: root.accountName(modelData) + " — " + (modelData.address || modelData.path || modelData.id)
+                LogosText { text: "QR wallets"; font.pixelSize: 22 }
+                LogosInfoButton {
+                    objectName: "qrWalletInfo"
+                    title: "Wallets that sign over QR codes"
+                    Accessible.name: "Help: Wallets that sign over QR codes"
+                    text: "Air-gapped wallets such as the Keycard Shell, Keystone, Passport and Jade never connect to "
+                          + "this computer. Each request is shown here as animated QR codes for the wallet to scan. "
+                          + "You check and confirm it on the wallet, then hold its answer up to the camera. "
+                          + "The camera belongs to Logos QR, and macOS asks for it once, in that name. "
+                          + "Only public keys are kept on this computer; spending still needs the wallet."
                 }
+                Item { Layout.fillWidth: true }
                 LogosButton {
-                    objectName: "removeAccount_" + index
-                    text: "Remove"
-                    onClicked: logos.watch(root.backend.removeAccount(modelData.id), function (gone) {})
+                    objectName: "addWallet"
+                    text: "Add a QR wallet…"
+                    enabled: root.ready && !root.working
+                    onClicked: root.openAdd(null)
+                }
+                LogosButton { text: "Refresh"; enabled: root.ready && !root.working; onClicked: root.backend.refresh() }
+            }
+            LogosText {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                color: Theme.palette.textSecondary
+                text: "Add a wallet from the account code it shows. Your keys stay on the wallet."
+            }
+            LogosText {
+                objectName: "noWallets"
+                visible: root.ready && root.wallets.length === 0
+                text: "Add a QR wallet to see its accounts here."
+            }
+
+            Repeater {
+                objectName: "walletRepeater"
+                model: root.wallets
+                delegate: Frame {
+                    id: group
+                    required property var modelData
+                    required property int index
+                    Layout.fillWidth: true
+                    padding: Theme.spacing.medium
+                    background: Rectangle { radius: 6; color: Theme.palette.backgroundMuted }
+                    contentItem: ColumnLayout {
+                        spacing: Theme.spacing.small
+                        RowLayout {
+                            Layout.fillWidth: true
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                LogosText {
+                                    objectName: "walletName_" + group.index
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                    textFormat: Text.PlainText
+                                    font.bold: true
+                                    text: root.walletName(group.modelData)
+                                }
+                                LogosText {
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                    color: Theme.palette.textSecondary
+                                    text: "Signs over QR codes · " + root.count(group.modelData.accounts.length)
+                                }
+                            }
+                            LogosButton {
+                                objectName: "addAccounts_" + group.index
+                                text: "Add accounts"
+                                enabled: !root.working
+                                onClicked: root.openAdd(group.modelData)
+                            }
+                            LogosButton {
+                                objectName: "manageWallet_" + group.index
+                                text: "Manage…"
+                                enabled: !root.working
+                                onClicked: { root.selectedFingerprint = group.modelData.fingerprint; manageSheet.open() }
+                            }
+                        }
+                        LogosText {
+                            visible: group.modelData.accounts.length === 0
+                            text: "No accounts yet."
+                            color: Theme.palette.textSecondary
+                        }
+                        Repeater {
+                            objectName: "accountRepeater_" + group.index
+                            model: group.modelData.accounts
+                            delegate: RowLayout {
+                                required property var modelData
+                                required property int index
+                                readonly property bool evm: modelData.family === "evm"
+                                readonly property string key: evm ? (modelData.address || "") : (modelData.xpub || "")
+                                Layout.fillWidth: true
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    LogosText {
+                                        objectName: "accountLabel_" + group.index + "_" + index
+                                        Layout.fillWidth: true
+                                        elide: Text.ElideRight
+                                        textFormat: Text.PlainText
+                                        text: modelData.label || root.familyWords(modelData.family)
+                                    }
+                                    LogosText {
+                                        objectName: "accountPath_" + group.index + "_" + index
+                                        textFormat: Text.PlainText
+                                        color: Theme.palette.textSecondary
+                                        text: "Derivation path: " + (modelData.path || "Unavailable")
+                                    }
+                                    RowLayout {
+                                        LogosText { color: Theme.palette.textSecondary; text: evm ? "Address:" : "Account key:" }
+                                        LogosText {
+                                            objectName: "accountLine_" + group.index + "_" + index
+                                            textFormat: Text.PlainText
+                                            color: Theme.palette.textSecondary
+                                            text: key ? root.shortKey(key) : "Unavailable"
+                                        }
+                                        LogosCopyButton {
+                                            objectName: "accountCopy_" + group.index + "_" + index
+                                            visible: !!key
+                                            value: key
+                                        }
+                                    }
+                                }
+                                LogosText {
+                                    color: Theme.palette.textSecondary
+                                    text: root.familyWords(modelData.family) + (modelData.chain === "test" ? " · Test" : "")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            LogosText {
+                objectName: "lastError"
+                Layout.fillWidth: true
+                visible: root.ready && !!root.backend.lastError
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                color: Theme.palette.error
+                text: root.ready ? root.backend.lastError : ""
+            }
+        }
+    }
+
+    // ── adding a wallet's accounts ───────────────────────────────────────────
+    LogosDialog {
+        id: addSheet
+        objectName: "addWalletDialog"
+        title: root.wallet ? "Add accounts · " + root.walletName(root.wallet) : "Add a QR wallet"
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 40, 580)
+        closePolicy: root.working || submitting ? Popup.NoAutoClose : Popup.CloseOnEscape
+        property bool submitting: false
+        // Whether this opening started a scan, so an earlier one's outcome isn't shown.
+        property bool started: false
+        onOpened: {
+            submitting = false; started = false
+            scanEvm.checked = true; scanSegwit.checked = false; scanTaproot.checked = false
+            labelField.text = ""
+            var i = root.wallet ? root.profiles.findIndex(function(p) { return p.name === root.wallet.profile }) : -1
+            walletType.currentIndex = i + 1
+        }
+
+        function line() {
+            if (!started) return ""
+            if (root.working) return "Hold the wallet's account code up to the camera. The Logos QR window shows what it sees; Cancel there stops."
+            if (root.scanning.state === "done") {
+                var n = (root.scanning.accounts || []).length
+                return n === 1 ? "Account added." : "Added " + n + " accounts."
+            }
+            if (root.scanning.state === "failed") return "Not added: " + (root.scanning.error || "")
+            return ""
+        }
+
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing.small
+            LogosText {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: "Show your wallet's account code, then hold it up to the camera. On a Keycard Shell: Connect software wallet."
+            }
+            LogosComboBox {
+                id: walletType
+                objectName: "walletType"
+                Layout.fillWidth: true
+                model: ["As its code says"].concat(root.profiles.map(function(p) { return p.label }))
+                enabled: !root.working && !addSheet.submitting
+            }
+            RowLayout {
+                LogosCheckbox { id: scanEvm; objectName: "scanEvm"; text: "Ethereum"; enabled: !root.working }
+                LogosCheckbox { id: scanSegwit; objectName: "scanSegwit"; text: "Bitcoin · Native SegWit"; enabled: !root.working }
+                LogosCheckbox { id: scanTaproot; objectName: "scanTaproot"; text: "Bitcoin · Taproot"; enabled: !root.working }
+                LogosInfoButton {
+                    objectName: "scanInfo"
+                    title: "Adding accounts"
+                    Accessible.name: "Help: Adding accounts"
+                    text: "One code can hold several accounts: tick each kind you want. They are on the network "
+                          + "the wallet is set to. Only public keys are kept, so apps can show addresses and ask "
+                          + "the wallet to sign. Choose the wallet if its code doesn't say which it is: its "
+                          + "requests are then sized for it."
+                }
+            }
+            LogosTextField {
+                id: labelField
+                objectName: "scanLabel"
+                Layout.fillWidth: true
+                placeholderText: "Account name (optional)"
+                textInput.maximumLength: 80
+                enabled: !root.working
+            }
+            LogosText {
+                objectName: "scanLine"
+                Layout.fillWidth: true
+                visible: text !== ""
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                color: root.scanning.state === "failed" ? Theme.palette.error : Theme.palette.text
+                text: addSheet.line()
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                LogosButton {
+                    objectName: "addDone"
+                    text: "Done"
+                    enabled: !root.working && !addSheet.submitting
+                    onClicked: addSheet.close()
+                }
+                Item { Layout.fillWidth: true }
+                LogosButton {
+                    objectName: "scanButton"
+                    text: "Read the wallet's code"
+                    enabled: root.ready && !root.working && !addSheet.submitting
+                             && (scanEvm.checked || scanSegwit.checked || scanTaproot.checked)
+                    onClicked: {
+                        var families = []
+                        if (scanEvm.checked) families.push("evm")
+                        if (scanSegwit.checked) families.push("bitcoin")
+                        if (scanTaproot.checked) families.push("bitcoin_taproot")
+                        var profile = walletType.currentIndex > 0 ? root.profiles[walletType.currentIndex - 1].name : ""
+                        addSheet.submitting = true
+                        addSheet.started = true
+                        logos.watch(root.backend.scan(JSON.stringify(families), profile, labelField.text),
+                                    function (ok) { addSheet.submitting = false })
+                    }
                 }
             }
         }
+    }
 
-        LogosText {
-            objectName: "lastError"
-            Layout.fillWidth: true
-            visible: root.ready && root.backend.lastError !== ""
-            wrapMode: Text.WordWrap
-            textFormat: Text.PlainText
-            color: Theme.palette.error
-            text: root.ready ? root.backend.lastError : ""
+    // ── managing a wallet ────────────────────────────────────────────────────
+    LogosDialog {
+        id: manageSheet
+        objectName: "manageWalletDialog"
+        title: "Manage · " + root.walletName(root.wallet)
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 40, 620)
+        height: Math.min(parent.height - 40, 620)
+        contentItem: ColumnLayout {
+            LogosScrollView {
+                id: manageScroll
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                contentWidth: availableWidth
+                ColumnLayout {
+                    width: manageScroll.availableWidth
+                    spacing: Theme.spacing.small
+                    LogosText {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WrapAnywhere
+                        textFormat: Text.PlainText
+                        color: Theme.palette.textSecondary
+                        text: root.wallet ? "Master fingerprint: " + root.wallet.fingerprint
+                                            + (root.wallet.label ? " · requests sized for a " + root.wallet.label : "") : ""
+                    }
+                    Repeater {
+                        objectName: "manageAccounts"
+                        model: (root.wallet && root.wallet.accounts) || []
+                        delegate: RowLayout {
+                            Layout.fillWidth: true
+                            LogosText {
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 1
+                                wrapMode: Text.WrapAnywhere
+                                textFormat: Text.PlainText
+                                text: (modelData.label || root.familyWords(modelData.family)) + "\n" + (modelData.address || modelData.path || modelData.id)
+                            }
+                            LogosButton {
+                                objectName: "renameAccount_" + index
+                                text: "Rename"
+                                onClicked: {
+                                    renameSheet.accountId = modelData.id
+                                    renameSheet.accountLabel = modelData.label || ""
+                                    renameSheet.accountDetails = modelData.address || modelData.path || modelData.id
+                                    renameSheet.open()
+                                }
+                            }
+                            LogosButton {
+                                objectName: "removeAccount_" + index
+                                text: "Remove"
+                                onClicked: logos.watch(root.backend.removeAccount(modelData.id), function (gone) {})
+                            }
+                        }
+                    }
+                    LogosText {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        color: Theme.palette.textSecondary
+                        text: "Removing an account hides it from apps. Nothing on the wallet changes, and you can add it again from its code."
+                    }
+                    LogosButton {
+                        objectName: "forgetWallet"
+                        text: "Forget wallet…"
+                        enabled: !!root.wallet
+                        onClicked: {
+                            forgetSheet.fingerprint = root.selectedFingerprint
+                            forgetSheet.walletLabel = root.walletName(root.wallet)
+                            forgetSheet.open()
+                        }
+                    }
+                    LogosText {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        textFormat: Text.PlainText
+                        color: Theme.palette.error
+                        text: root.ready ? root.backend.lastError : ""
+                    }
+                }
+            }
+            LogosButton { objectName: "manageDone"; text: "Done"; onClicked: manageSheet.close() }
         }
+    }
 
-        Item { Layout.fillHeight: true }
+    LogosDialog {
+        id: renameSheet
+        objectName: "renameAccountDialog"
+        title: "Rename account"
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 40, 520)
+        property string accountId: ""
+        property string accountLabel: ""
+        property string accountDetails: ""
+        property bool saving: false
+        property string errorText: ""
+        closePolicy: saving ? Popup.NoAutoClose : Popup.CloseOnEscape
+        onOpened: { accountName.text = accountLabel; errorText = ""; saving = false; accountName.forceActiveFocus() }
+        contentItem: ColumnLayout {
+            LogosText { Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; textFormat: Text.PlainText; text: renameSheet.accountDetails }
+            LogosTextField {
+                id: accountName
+                objectName: "accountName"
+                Layout.fillWidth: true
+                placeholderText: "Account name"
+                textInput.maximumLength: 80
+                enabled: !renameSheet.saving
+            }
+            LogosText {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                color: Theme.palette.textSecondary
+                text: "This name is saved on this computer and shown to apps. Leave it blank to use the default."
+            }
+            LogosText {
+                Layout.fillWidth: true
+                visible: !!text
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                color: Theme.palette.error
+                text: renameSheet.errorText
+            }
+            RowLayout {
+                LogosButton { text: "Cancel"; enabled: !renameSheet.saving; onClicked: renameSheet.close() }
+                Item { Layout.fillWidth: true }
+                LogosButton {
+                    objectName: "saveAccountName"
+                    text: renameSheet.saving ? "Saving…" : "Save name"
+                    enabled: !renameSheet.saving
+                    onClicked: {
+                        renameSheet.saving = true
+                        logos.watch(root.backend.renameAccount(renameSheet.accountId, accountName.text), function (ok) {
+                            renameSheet.saving = false
+                            if (ok) renameSheet.close()
+                            else renameSheet.errorText = root.backend.lastError
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    LogosDialog {
+        id: forgetSheet
+        objectName: "forgetWalletDialog"
+        title: "Forget wallet?"
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 40, 580)
+        property string fingerprint: ""
+        property string walletLabel: ""
+        property bool working: false
+        onOpened: working = false
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing.medium
+            LogosText { Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; textFormat: Text.PlainText; font.bold: true; text: forgetSheet.walletLabel }
+            LogosText {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: "Stop offering this wallet's accounts to apps and remove them from this computer. Nothing on the wallet is erased, and you can add its accounts again from its code."
+            }
+            LogosText {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                color: Theme.palette.error
+                text: root.ready ? root.backend.lastError : ""
+            }
+            RowLayout {
+                LogosButton { objectName: "cancelForgetWallet"; text: "Cancel"; enabled: !forgetSheet.working; onClicked: forgetSheet.close() }
+                Item { Layout.fillWidth: true }
+                LogosButton {
+                    objectName: "confirmForgetWallet"
+                    text: forgetSheet.working ? "Forgetting…" : "Forget wallet"
+                    enabled: !forgetSheet.working
+                    onClicked: {
+                        forgetSheet.working = true
+                        logos.watch(root.backend.forgetWallet(forgetSheet.fingerprint), function (ok) {
+                            forgetSheet.working = false
+                            if (ok) { forgetSheet.close(); manageSheet.close() }
+                        })
+                    }
+                }
+            }
+        }
     }
 }

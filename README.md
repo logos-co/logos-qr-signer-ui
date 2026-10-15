@@ -10,11 +10,14 @@ Everything goes through [`qr_signer_module`](https://github.com/logos-co/logos-q
 which reads codes through [`qr_scanner_module`](https://github.com/logos-co/logos-qr-scanner-module):
 the camera is asked for in the name of Logos QR, never this app's.
 
+The layout follows [`logos-keycard-ui`](https://github.com/logos-co/logos-keycard-ui)'s: a card per wallet,
+its accounts inside, adding and managing in dialogs.
+
 | On screen | The module's |
 |---|---|
-| Which wallet: as its code says, or one the signer knows by name | `profiles` |
-| EVM, native segwit, taproot; name; Read the wallet's code | `scan_accounts`, then `add_status` until the code is read |
-| Offered to apps; Remove | `signer_accounts`, `remove_account` |
+| A card per wallet, "Keycard Shell · 73c5da0a", its accounts with their paths, addresses and account keys to copy | `wallets`, `signer_accounts` |
+| Add a QR wallet… / Add accounts: which wallet (as its code says, or by name); Ethereum, Bitcoin · Native SegWit, Bitcoin · Taproot; a name; Read the wallet's code | `profiles`, `scan_accounts`, then `add_status` until the code is read |
+| Manage…: Rename and Remove each account; Forget wallet | `rename_account`, `remove_account` (each of the wallet's, to forget it) |
 
 The accounts are on the network the wallet is set to: a code with `m/84'/1'/0'` gives a test network
 account.
