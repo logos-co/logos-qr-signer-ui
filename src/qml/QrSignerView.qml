@@ -66,7 +66,9 @@ Item {
                     Accessible.name: "Help: Wallets that sign over QR codes"
                     text: "Air-gapped wallets such as the Keycard Shell, Keystone, Passport and Jade never connect to "
                           + "this computer. Each request is shown here as animated QR codes for the wallet to scan. "
-                          + "You check and confirm it on the wallet, then hold its answer up to the camera. "
+                          + "You check and confirm it on the wallet, then press Scan the answer in the Logos QR "
+                          + "window (or Enter in a terminal) and hold the wallet's answer up to the camera: "
+                          + "the camera stays off until then. "
                           + "The camera belongs to Logos QR, and macOS asks for it once, in that name. "
                           + "Only public keys are kept on this computer; spending still needs the wallet."
                 }
