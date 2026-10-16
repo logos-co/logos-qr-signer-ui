@@ -1,0 +1,31 @@
+// QtRO view contract for the QR signer's app. No secret crosses it: the keys stay on the wallet,
+// and only the public keys in its account code are kept.
+class QrSignerUi
+{
+    PROP(QString statusText="Starting" READONLY)
+    PROP(QString lastError="" READONLY)
+
+    // `[{ name, label }]`: the wallets the signer knows by name.
+    PROP(QString profilesJson="[]" READONLY)
+    // The wallets, by master fingerprint, each with its accounts, public material only:
+    // `[{ fingerprint, profile, label, accounts }]`.
+    PROP(QString walletsJson="[]" READONLY)
+    // The scan under way or last finished: `{ state, accounts?, error? }`, `{}` before any;
+    // `state` is scanning, done, failed or cancelled.
+    PROP(QString scanJson="{}" READONLY)
+    // How the camera reads the code while this app draws the scan, from qr_scanner_module (OPTIONAL):
+    // `{ active, seeing, received?, expected?, in_window }`. No picture. `{}` when the window draws it.
+    PROP(QString scanViewJson="{}" READONLY)
+
+    SLOT(void refresh())
+    // Read a wallet's account code: `families` is a JSON list of evm, bitcoin, bitcoin_taproot;
+    // an empty `profile` lets the code say which wallet it is.
+    SLOT(bool scan(QString familiesJson, QString profile, QString label))
+    // Stop the scan under way; `scanJson` then says `cancelled`.
+    SLOT(bool cancelScan())
+    SLOT(bool removeAccount(QString id))
+    // A blank name clears it.
+    SLOT(bool renameAccount(QString id, QString label))
+    // Stop offering every account of the wallet with this fingerprint. Nothing on it changes.
+    SLOT(bool forgetWallet(QString fingerprint))
+}
