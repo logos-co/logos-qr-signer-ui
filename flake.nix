@@ -3,9 +3,8 @@
 
   inputs = {
     logos-module-builder.url = "github:logos-co/logos-module-builder";
-    # Pinned to logos-qr-signer-module#1's head until it merges.
     qr_signer_module = {
-      url = "github:logos-co/logos-qr-signer-module/b93a06f040f69a20702b89ebedefc7e13bc47d26";
+      url = "github:logos-co/logos-qr-signer-module";
       inputs.logos-module-builder.follows = "logos-module-builder";
     };
     # OPTIONAL: a wallet's account code is read here, in the Add dialog, not in a window of the
