@@ -2162,17 +2162,16 @@
         "qr_scanner_module": "qr_scanner_module_2"
       },
       "locked": {
-        "lastModified": 1792181592,
+        "lastModified": 1792182734,
         "narHash": "sha256-l9mL7lrRi7mT3SKNEjGQXy/V0/wFL67TGkkXezRQH0Y=",
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "b93a06f040f69a20702b89ebedefc7e13bc47d26",
+        "rev": "33f525fd3bbdf25b8772f0ec0c610a8fab5cf048",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "b93a06f040f69a20702b89ebedefc7e13bc47d26",
         "type": "github"
       }
     },
