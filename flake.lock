@@ -2162,11 +2162,11 @@
         "qr_scanner_module": "qr_scanner_module_2"
       },
       "locked": {
-        "lastModified": 1792182734,
-        "narHash": "sha256-l9mL7lrRi7mT3SKNEjGQXy/V0/wFL67TGkkXezRQH0Y=",
+        "lastModified": 1792187859,
+        "narHash": "sha256-KINysNomTa3RBiMBSI2JH8+XxYzam+Gi5o9CI3Pk/lA=",
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "33f525fd3bbdf25b8772f0ec0c610a8fab5cf048",
+        "rev": "9186a54c59b526c2c32176f481a1bed660ceeeb5",
         "type": "github"
       },
       "original": {
