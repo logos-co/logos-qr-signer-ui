@@ -220,9 +220,13 @@ sections:
       - title: "What the module kept"
         text: |
           Forgetting the wallet removed its accounts from this computer; nothing on the wallet changed.
-        run: "find userdir -name accounts.json -exec cat {} +"
+          The module seals each wallet's accounts under a key the signer manager gives it, and there is
+          no manager here, so they were only ever in memory.
+        run: |
+          find userdir -name 'accounts*.json' -print -exec cat {} \;
+          python3 -c 'import json,pathlib,sys; kept=[f for f in pathlib.Path("userdir").rglob("accounts*.json") if json.loads(f.read_text()).get("seeds", json.loads(f.read_text()).get("accounts"))]; sys.exit("kept: %s" % kept) if kept else print("no accounts kept")'
         expect_contains:
-          - '"accounts": []'
+          - "no accounts kept"
 
       - title: "Stop the emulated wallet"
         run: "kill $(cat wallet.pid)"
