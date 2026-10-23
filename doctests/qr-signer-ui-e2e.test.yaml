@@ -35,9 +35,9 @@ sections:
       - title: "The QR signer, the scanner it depends on, and the emulated wallet"
         run: |
           set -euo pipefail
-          nix build 'github:logos-co/logos-qr-signer-module/9186a54c59b526c2c32176f481a1bed660ceeeb5#install' --no-write-lock-file -o result-signer
+          nix build 'github:logos-co/logos-qr-signer-module/c28fc37393e2904b1b4cb3dd3e83ea7ac980cd96#install' --no-write-lock-file -o result-signer
           nix build 'github:logos-co/logos-qr-scanner-module/bd5084b7491e3914538099b43d18e7e5e832c771#install' --no-write-lock-file -o result-scanner
-          nix build 'github:logos-co/logos-qr-signer-module/9186a54c59b526c2c32176f481a1bed660ceeeb5#emulator' --no-write-lock-file -o result-emulator
+          nix build 'github:logos-co/logos-qr-signer-module/c28fc37393e2904b1b4cb3dd3e83ea7ac980cd96#emulator' --no-write-lock-file -o result-emulator
         code_block: |
           nix build 'github:logos-co/logos-qr-signer-module#install' -o result-signer
           nix build 'github:logos-co/logos-qr-scanner-module#install' -o result-scanner
@@ -104,6 +104,13 @@ sections:
               property: "checked"
               value: true
 
+            # Each account its own name, or none: only the SegWit one is named here.
+            - name: "Name the native SegWit account"
+              action: set_property
+              find_value: "scanNameSegwit"
+              property: "text"
+              value: "Cold"
+
             - name: "Read the wallet's code"
               action: click_object
               find_value: "scanButton"
@@ -132,6 +139,18 @@ sections:
               find_value: "accountRepeater_0"
               property: "count"
               value: 3
+
+            - name: "The SegWit account has the name it was given"
+              action: expect_property
+              find_value: "accountLabel_0_1"
+              property: "text"
+              value: "Cold"
+
+            - name: "The Ethereum account none: it shows its kind"
+              action: expect_property
+              find_value: "accountLabel_0_0"
+              property: "text"
+              value: "Ethereum"
 
             - name: "The Ethereum address, to copy"
               action: expect_property

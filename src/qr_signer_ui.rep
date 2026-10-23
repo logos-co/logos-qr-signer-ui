@@ -20,7 +20,7 @@ class QrSignerUi
     SLOT(void refresh())
     // Read a wallet's account code: `families` is a JSON list of evm, bitcoin, bitcoin_taproot;
     // an empty `profile` lets the code say which wallet it is.
-    SLOT(bool scan(QString familiesJson, QString profile, QString label))
+    SLOT(bool scan(QString familiesJson, QString profile, QString labelsJson))
     // Stop the scan under way; `scanJson` then says `cancelled`.
     SLOT(bool cancelScan())
     SLOT(bool removeAccount(QString id))

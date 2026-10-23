@@ -99,7 +99,7 @@ void QrSignerUiBackend::refresh()
     setStatusText(QStringLiteral("Ready"));
 }
 
-bool QrSignerUiBackend::scan(QString familiesJson, QString profile, QString label)
+bool QrSignerUiBackend::scan(QString familiesJson, QString profile, QString labelsJson)
 {
     setLastError(QString());
     if (!m_job.isEmpty()) {
@@ -110,8 +110,16 @@ bool QrSignerUiBackend::scan(QString familiesJson, QString profile, QString labe
     p.insert(QStringLiteral("families"), QJsonDocument::fromJson(familiesJson.toUtf8()).array());
     if (!profile.isEmpty())
         p.insert(QStringLiteral("profile"), profile);
-    if (!label.trimmed().isEmpty())
-        p.insert(QStringLiteral("label"), label.trimmed());
+    // A name per account, by family; one left empty has none.
+    QJsonObject labels;
+    const QJsonObject asked = QJsonDocument::fromJson(labelsJson.toUtf8()).object();
+    for (auto it = asked.begin(); it != asked.end(); ++it) {
+        const QString name = it.value().toString().trimmed();
+        if (!name.isEmpty())
+            labels.insert(it.key(), name);
+    }
+    if (!labels.isEmpty())
+        p.insert(QStringLiteral("labels"), labels);
     // Claimed before the scan starts, so the scanner reads it here instead of in its window. With
     // no scanner, or one that won't have this app draw, the answer is no handle: the window, as before.
     const QString h = modules().qr_scanner_module.presenter_attach();
