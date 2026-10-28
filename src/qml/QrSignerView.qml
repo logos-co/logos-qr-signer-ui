@@ -220,7 +220,7 @@ Item {
         onOpened: {
             submitting = false; started = false
             scanEvm.checked = true; scanSegwit.checked = false; scanTaproot.checked = false
-            labelField.text = ""
+            nameEvm.text = ""; nameSegwit.text = ""; nameTaproot.text = ""
             var i = root.wallet ? root.profiles.findIndex(function(p) { return p.name === root.wallet.profile }) : -1
             walletType.currentIndex = i + 1
         }
@@ -228,7 +228,7 @@ Item {
         function line() {
             if (!started) return ""
             if (root.working && root.scanView.active === true) {
-                var s = root.scanView.seeing === true
+                let s = root.scanView.seeing === true
                         ? "A code is in view: hold it steady."
                         : "No code in view yet: hold the wallet's account code up to the camera."
                 if ((root.scanView.expected || 0) > 0)
@@ -237,7 +237,7 @@ Item {
             }
             if (root.working) return "Hold the wallet's account code up to the camera. The Logos QR window shows what it sees."
             if (root.scanning.state === "done") {
-                var n = (root.scanning.accounts || []).length
+                let n = (root.scanning.accounts || []).length
                 return n === 1 ? "Account added." : "Added " + n + " accounts."
             }
             if (root.scanning.state === "failed") return "Not added: " + (root.scanning.error || "")
@@ -273,11 +273,31 @@ Item {
                           + "requests are then sized for it."
                 }
             }
+            // A name for each account added, or none: the list then shows its kind.
             LogosTextField {
-                id: labelField
-                objectName: "scanLabel"
+                id: nameEvm
+                objectName: "scanNameEvm"
                 Layout.fillWidth: true
-                placeholderText: "Account name (optional)"
+                visible: scanEvm.checked
+                placeholderText: "Ethereum account's name (optional)"
+                textInput.maximumLength: 80
+                enabled: !root.working
+            }
+            LogosTextField {
+                id: nameSegwit
+                objectName: "scanNameSegwit"
+                Layout.fillWidth: true
+                visible: scanSegwit.checked
+                placeholderText: "Native SegWit account's name (optional)"
+                textInput.maximumLength: 80
+                enabled: !root.working
+            }
+            LogosTextField {
+                id: nameTaproot
+                objectName: "scanNameTaproot"
+                Layout.fillWidth: true
+                visible: scanTaproot.checked
+                placeholderText: "Taproot account's name (optional)"
                 textInput.maximumLength: 80
                 enabled: !root.working
             }
@@ -313,13 +333,14 @@ Item {
                              && (scanEvm.checked || scanSegwit.checked || scanTaproot.checked)
                     onClicked: {
                         var families = []
-                        if (scanEvm.checked) families.push("evm")
-                        if (scanSegwit.checked) families.push("bitcoin")
-                        if (scanTaproot.checked) families.push("bitcoin_taproot")
+                        var labels = {}
+                        if (scanEvm.checked) { families.push("evm"); labels.evm = nameEvm.text }
+                        if (scanSegwit.checked) { families.push("bitcoin"); labels.bitcoin = nameSegwit.text }
+                        if (scanTaproot.checked) { families.push("bitcoin_taproot"); labels.bitcoin_taproot = nameTaproot.text }
                         var profile = walletType.currentIndex > 0 ? root.profiles[walletType.currentIndex - 1].name : ""
                         addSheet.submitting = true
                         addSheet.started = true
-                        logos.watch(root.backend.scan(JSON.stringify(families), profile, labelField.text),
+                        logos.watch(root.backend.scan(JSON.stringify(families), profile, JSON.stringify(labels)),
                                     function (ok) { addSheet.submitting = false })
                     }
                 }

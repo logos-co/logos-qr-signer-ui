@@ -16,7 +16,7 @@ class QrSignerUiBackend : public QrSignerUiSimpleSource,
 {
 public:
     void refresh() override;
-    bool scan(QString familiesJson, QString profile, QString label) override;
+    bool scan(QString familiesJson, QString profile, QString labelsJson) override;
     bool cancelScan() override;
     bool removeAccount(QString id) override;
     bool renameAccount(QString id, QString label) override;
