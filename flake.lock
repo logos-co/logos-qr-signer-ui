@@ -2161,11 +2161,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793213792,
-        "narHash": "sha256-HqcBsxEEmQLI6tjcKK4zl1bdbEFGI/Fo1hCEFCrYd7k=",
+        "lastModified": 1793219149,
+        "narHash": "sha256-z9u16XInKi+b9GpG7kR+UT1u4l8zj5r9vhaqK0NjJ40=",
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "8c62ac69b8036ad44e2cffa54024561daf1be74a",
+        "rev": "7f53e75f75c1504115002683c37d3c2727863cbb",
         "type": "github"
       },
       "original": {

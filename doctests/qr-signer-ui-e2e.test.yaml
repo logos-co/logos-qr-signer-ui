@@ -35,9 +35,9 @@ sections:
       - title: "The QR signer, the scanner it depends on, and the emulated wallet"
         run: |
           set -euo pipefail
-          nix build 'github:logos-co/logos-qr-signer-module/8c62ac69b8036ad44e2cffa54024561daf1be74a#install' --no-write-lock-file -o result-signer
+          nix build 'github:logos-co/logos-qr-signer-module/7f53e75f75c1504115002683c37d3c2727863cbb#install' --no-write-lock-file -o result-signer
           nix build 'github:logos-co/logos-qr-scanner-module/bbf2a45ff2cd835c5fdda0ec5a1ae8ad62e2e643#install' --no-write-lock-file -o result-scanner
-          nix build 'github:logos-co/logos-qr-signer-module/8c62ac69b8036ad44e2cffa54024561daf1be74a#emulator' --no-write-lock-file -o result-emulator
+          nix build 'github:logos-co/logos-qr-signer-module/7f53e75f75c1504115002683c37d3c2727863cbb#emulator' --no-write-lock-file -o result-emulator
         code_block: |
           nix build 'github:logos-co/logos-qr-signer-module#install' -o result-signer
           nix build 'github:logos-co/logos-qr-scanner-module#install' -o result-scanner

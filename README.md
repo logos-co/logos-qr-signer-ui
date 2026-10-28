@@ -24,9 +24,15 @@ its accounts inside, adding and managing in dialogs.
 | A card per wallet, "Keycard Shell · 73c5da0a", its accounts with their paths, addresses and account keys to copy | `wallets`, `signer_accounts` |
 | Add a QR wallet… / Add accounts: which wallet (as its code says, or by name); Ethereum, Bitcoin · Native SegWit, Bitcoin · Taproot, each with its own optional name; Read the wallet's code | `profiles`, `scan_accounts`, then `add_status` until the code is read |
 | Manage…: Rename and Remove each account; Forget wallet | `rename_account`, `remove_account` (each of the wallet's, to forget it) |
+| On a wallet with no way in yet, what it needs: a password in the Signer app, or, on a Keycard Shell added without its unlock key, Give its unlock key… | `wallets` (`unlockKey`, `wayIn`, once the signer manager says), `give_unlock_key`, then `add_status` |
 
 The accounts are on the network the wallet is set to: a code with `m/84'/1'/0'` gives a test network
 account.
+
+A wallet's data here unlocks in the Signer app, by its unlock key or a password. A Keycard Shell gives
+the key when it is added; a wallet that doesn't, and every wallet of a kind that can't, has no way in
+until it gets a password. Until then the card says so, as does the Add dialog, since its accounts can't
+be opened after a restart. A Shell can give its key later from its card or from Manage….
 
 ```sh
 nix build .#lgx

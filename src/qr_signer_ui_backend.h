@@ -17,6 +17,7 @@ class QrSignerUiBackend : public QrSignerUiSimpleSource,
 public:
     void refresh() override;
     bool scan(QString familiesJson, QString profile, QString labelsJson) override;
+    bool giveUnlockKey(QString fingerprint) override;
     bool cancelScan() override;
     bool removeAccount(QString id) override;
     bool renameAccount(QString id, QString label) override;
@@ -31,6 +32,10 @@ private:
     void poll();
     /// The scan is over: the scanner draws its sessions where it would again.
     void letScannerGo();
+    /// Have this app draw the scan about to start, when the scanner lets it.
+    void claimScanner();
+    /// Follow a job the signer answered with, or say why there is none.
+    bool follow(const QJsonObject &reply, const QString &context);
 
     QString m_job;
     /// The scanner's handle for this app's claim on drawing the scan; empty when the window draws it.
