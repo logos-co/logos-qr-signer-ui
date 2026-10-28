@@ -6,6 +6,7 @@
     qr_signer_module = {
       url = "github:logos-co/logos-qr-signer-module";
       inputs.logos-module-builder.follows = "logos-module-builder";
+      inputs.qr_scanner_module.follows = "qr_scanner_module";
     };
     # OPTIONAL: a wallet's account code is read here, in the Add dialog, not in a window of the
     # scanner's. It hands over whether a code is in view and the parts read, never a picture, and

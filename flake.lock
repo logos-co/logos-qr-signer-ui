@@ -1294,6 +1294,23 @@
         "type": "github"
       }
     },
+    "logos-signer-interface": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792699186,
+        "narHash": "sha256-Ln9UREet1DALdbxZnBy1osIEXV9/MlQZusR/LV5Bgyk=",
+        "owner": "logos-co",
+        "repo": "logos-signer-interface",
+        "rev": "832fb948ef8bb1efd8e08a95eac483b96f70a567",
+        "type": "github"
+      },
+      "original": {
+        "owner": "logos-co",
+        "repo": "logos-signer-interface",
+        "rev": "832fb948ef8bb1efd8e08a95eac483b96f70a567",
+        "type": "github"
+      }
+    },
     "logos-test-framework": {
       "inputs": {
         "logos-cpp-sdk": [
@@ -2120,32 +2137,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792177170,
-        "narHash": "sha256-ttibWHZ59BtWX9ZnAg0UQo9VEb8Z8yV88H4gEESpCRQ=",
+        "lastModified": 1793213818,
+        "narHash": "sha256-X9X7yEQBo6rgW6NXfdaD12jOCMsiO6L3FeNYZFsV9pk=",
         "owner": "logos-co",
         "repo": "logos-qr-scanner-module",
-        "rev": "bd5084b7491e3914538099b43d18e7e5e832c771",
-        "type": "github"
-      },
-      "original": {
-        "owner": "logos-co",
-        "repo": "logos-qr-scanner-module",
-        "type": "github"
-      }
-    },
-    "qr_scanner_module_2": {
-      "inputs": {
-        "logos-module-builder": [
-          "qr_signer_module",
-          "logos-module-builder"
-        ]
-      },
-      "locked": {
-        "lastModified": 1792177170,
-        "narHash": "sha256-ttibWHZ59BtWX9ZnAg0UQo9VEb8Z8yV88H4gEESpCRQ=",
-        "owner": "logos-co",
-        "repo": "logos-qr-scanner-module",
-        "rev": "bd5084b7491e3914538099b43d18e7e5e832c771",
+        "rev": "bbf2a45ff2cd835c5fdda0ec5a1ae8ad62e2e643",
         "type": "github"
       },
       "original": {
@@ -2159,14 +2155,17 @@
         "logos-module-builder": [
           "logos-module-builder"
         ],
-        "qr_scanner_module": "qr_scanner_module_2"
+        "logos-signer-interface": "logos-signer-interface",
+        "qr_scanner_module": [
+          "qr_scanner_module"
+        ]
       },
       "locked": {
-        "lastModified": 1792187859,
-        "narHash": "sha256-KINysNomTa3RBiMBSI2JH8+XxYzam+Gi5o9CI3Pk/lA=",
+        "lastModified": 1793213792,
+        "narHash": "sha256-HqcBsxEEmQLI6tjcKK4zl1bdbEFGI/Fo1hCEFCrYd7k=",
         "owner": "logos-co",
         "repo": "logos-qr-signer-module",
-        "rev": "9186a54c59b526c2c32176f481a1bed660ceeeb5",
+        "rev": "8c62ac69b8036ad44e2cffa54024561daf1be74a",
         "type": "github"
       },
       "original": {
