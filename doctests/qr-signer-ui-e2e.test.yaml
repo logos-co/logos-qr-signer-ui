@@ -35,9 +35,9 @@ sections:
       - title: "The QR signer, the scanner it depends on, and the emulated wallet"
         run: |
           set -euo pipefail
-          nix build 'github:logos-co/logos-qr-signer-module/8c62ac69b8036ad44e2cffa54024561daf1be74a#install' --no-write-lock-file -o result-signer
+          nix build 'github:logos-co/logos-qr-signer-module/de266be4da4294bfc2fec92350662e7b2f09a0bb#install' --no-write-lock-file -o result-signer
           nix build 'github:logos-co/logos-qr-scanner-module/bbf2a45ff2cd835c5fdda0ec5a1ae8ad62e2e643#install' --no-write-lock-file -o result-scanner
-          nix build 'github:logos-co/logos-qr-signer-module/8c62ac69b8036ad44e2cffa54024561daf1be74a#emulator' --no-write-lock-file -o result-emulator
+          nix build 'github:logos-co/logos-qr-signer-module/de266be4da4294bfc2fec92350662e7b2f09a0bb#emulator' --no-write-lock-file -o result-emulator
         code_block: |
           nix build 'github:logos-co/logos-qr-signer-module#install' -o result-signer
           nix build 'github:logos-co/logos-qr-scanner-module#install' -o result-scanner
@@ -127,6 +127,13 @@ sections:
               action: click_object
               find_value: "addDone"
 
+            - name: "The dialog closes"
+              action: expect_property
+              find_value: "addWalletDialog"
+              property: "visible"
+              value: false
+              timeout: 10000
+
             - name: "The code named a Keycard Shell"
               action: expect_property
               find_value: "walletName_0"
@@ -169,9 +176,24 @@ sections:
               action: click_object
               find_value: "manageWallet_0"
 
+            - name: "Its dialog opens"
+              action: expect_property
+              find_value: "manageWalletDialog"
+              property: "opened"
+              value: true
+              timeout: 10000
+
             - name: "Rename the Ethereum account"
               action: click_object
               find_value: "renameAccount_0"
+
+            # Once open: opening fills the field with the current name.
+            - name: "The rename dialog opens"
+              action: expect_property
+              find_value: "renameAccountDialog"
+              property: "opened"
+              value: true
+              timeout: 10000
 
             - name: "Its new name"
               action: set_property
@@ -190,6 +212,13 @@ sections:
               value: "Savings"
               timeout: 10000
 
+            - name: "The rename dialog closes"
+              action: expect_property
+              find_value: "renameAccountDialog"
+              property: "visible"
+              value: false
+              timeout: 10000
+
             - name: "Take the Taproot account back"
               action: click_object
               find_value: "removeAccount_2"
@@ -205,6 +234,13 @@ sections:
             - name: "Forget the wallet"
               action: click_object
               find_value: "forgetWallet"
+
+            - name: "It asks first"
+              action: expect_property
+              find_value: "forgetWalletDialog"
+              property: "opened"
+              value: true
+              timeout: 10000
 
             - name: "Confirm"
               action: click_object

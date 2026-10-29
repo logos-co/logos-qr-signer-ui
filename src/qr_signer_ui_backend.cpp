@@ -120,13 +120,35 @@ bool QrSignerUiBackend::scan(QString familiesJson, QString profile, QString labe
     }
     if (!labels.isEmpty())
         p.insert(QStringLiteral("labels"), labels);
+    claimScanner();
+    return follow(parseObject(modules().qr_signer_module.scan_accounts(
+                      QString::fromUtf8(QJsonDocument(p).toJson(QJsonDocument::Compact)))),
+                  QStringLiteral("scan"));
+}
+
+bool QrSignerUiBackend::giveUnlockKey(QString fingerprint)
+{
+    setLastError(QString());
+    if (!m_job.isEmpty()) {
+        setLastError(QStringLiteral("A wallet's code is already being read."));
+        return false;
+    }
+    claimScanner();
+    return follow(parseObject(modules().qr_signer_module.give_unlock_key(fingerprint)),
+                  QStringLiteral("unlock key"));
+}
+
+void QrSignerUiBackend::claimScanner()
+{
     // Claimed before the scan starts, so the scanner reads it here instead of in its window. With
     // no scanner, or one that won't have this app draw, the answer is no handle: the window, as before.
     const QString h = modules().qr_scanner_module.presenter_attach();
     m_present = h.startsWith(QStringLiteral("prs_")) ? h : QString();
-    const QJsonObject reply = parseObject(modules().qr_signer_module.scan_accounts(
-        QString::fromUtf8(QJsonDocument(p).toJson(QJsonDocument::Compact))));
-    if (!ok(reply, QStringLiteral("scan"))) {
+}
+
+bool QrSignerUiBackend::follow(const QJsonObject &reply, const QString &context)
+{
+    if (!ok(reply, context)) {
         letScannerGo();
         setScanJson(failed(lastError()));
         return false;

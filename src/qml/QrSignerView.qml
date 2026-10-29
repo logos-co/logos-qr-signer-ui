@@ -49,6 +49,21 @@ Item {
         root.selectedFingerprint = w ? w.fingerprint : ""
         addSheet.open()
     }
+    // What the signer manager says of a wallet, once it says: with no way in, its accounts can't be
+    // opened after a restart.
+    function noWayIn(w) { return !!w && w.wayIn === false }
+    function canGiveKey(w) { return !!w && w.profile === "keycard_shell" && w.unlockKey === false }
+    function noWayInWords(w) {
+        if (root.canGiveKey(w))
+            return "No way in yet: until you give its unlock key, or set a password for it in the Signer app, its accounts can't be opened after a restart."
+        if (w && w.unlockKey === false)
+            return "No way in yet: until you set a password for it in the Signer app, its accounts can't be opened after a restart. Wallets of this kind give no unlock key."
+        return "No way in yet: until you set one in the Signer app, its accounts can't be opened after a restart."
+    }
+    function openGiveKey(w) {
+        root.selectedFingerprint = w.fingerprint
+        keySheet.open()
+    }
 
     LogosScrollView {
         id: scroll
@@ -140,6 +155,25 @@ Item {
                                 onClicked: { root.selectedFingerprint = group.modelData.fingerprint; manageSheet.open() }
                             }
                         }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: root.noWayIn(group.modelData)
+                            LogosText {
+                                objectName: "noWayIn_" + group.index
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 1
+                                wrapMode: Text.WordWrap
+                                color: Theme.palette.error
+                                text: root.noWayInWords(group.modelData)
+                            }
+                            LogosButton {
+                                objectName: "giveKey_" + group.index
+                                visible: root.canGiveKey(group.modelData)
+                                text: "Give its unlock key…"
+                                enabled: !root.working
+                                onClicked: root.openGiveKey(group.modelData)
+                            }
+                        }
                         LogosText {
                             visible: group.modelData.accounts.length === 0
                             text: "No accounts yet."
@@ -227,6 +261,8 @@ Item {
 
         function line() {
             if (!started) return ""
+            if (root.working && root.scanning.step === "unlock_key")
+                return "Now scan the request in the Logos QR window with the wallet and confirm it, then hold its answer up to the camera: it gives this wallet's unlock key."
             if (root.working && root.scanView.active === true) {
                 let s = root.scanView.seeing === true
                         ? "A code is in view: hold it steady."
@@ -237,8 +273,15 @@ Item {
             }
             if (root.working) return "Hold the wallet's account code up to the camera. The Logos QR window shows what it sees."
             if (root.scanning.state === "done") {
-                let n = (root.scanning.accounts || []).length
-                return n === 1 ? "Account added." : "Added " + n + " accounts."
+                let added = root.scanning.accounts || []
+                let n = added.length
+                let s = n === 1 ? "Account added." : "Added " + n + " accounts."
+                if (root.scanning.unlockKey !== false) return s
+                let fp = added.length ? (added[0].fingerprint || added[0].seed || "") : ""
+                let w = root.wallets.find(function(x) { return x.fingerprint === fp }) || null
+                return s + (w && w.profile === "keycard_shell"
+                            ? " It gave no unlock key: give it from the wallet's card, or set a password for it in the Signer app, or its accounts can't be opened after a restart."
+                            : " Wallets of this kind give no unlock key: set a password for it in the Signer app, or its accounts can't be opened after a restart.")
             }
             if (root.scanning.state === "failed") return "Not added: " + (root.scanning.error || "")
             if (root.scanning.state === "cancelled") return "Stopped. Nothing was added."
@@ -373,6 +416,29 @@ Item {
                         text: root.wallet ? "Master fingerprint: " + root.wallet.fingerprint
                                             + (root.wallet.label ? " · requests sized for a " + root.wallet.label : "") : ""
                     }
+                    // Only once the signer manager says.
+                    RowLayout {
+                        Layout.fillWidth: true
+                        visible: !!root.wallet && root.wallet.unlockKey !== undefined
+                        LogosText {
+                            objectName: "unlockKeyLine"
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            wrapMode: Text.WordWrap
+                            color: Theme.palette.textSecondary
+                            text: !root.wallet ? ""
+                                  : root.wallet.unlockKey ? "Its unlock key is given: the Signer app can unlock this wallet with it."
+                                  : root.canGiveKey(root.wallet) ? "Its unlock key isn't given: the Signer app can unlock this wallet only by a password until it is."
+                                  : "Wallets of this kind give no unlock key: the Signer app unlocks this wallet by a password."
+                        }
+                        LogosButton {
+                            objectName: "giveKeyManage"
+                            visible: root.canGiveKey(root.wallet)
+                            text: "Give its unlock key…"
+                            enabled: !root.working
+                            onClicked: keySheet.open()
+                        }
+                    }
                     Repeater {
                         objectName: "manageAccounts"
                         model: (root.wallet && root.wallet.accounts) || []
@@ -428,6 +494,75 @@ Item {
                 }
             }
             LogosButton { objectName: "manageDone"; text: "Done"; onClicked: manageSheet.close() }
+        }
+    }
+
+    // ── a Keycard Shell's unlock key, after its add ──────────────────────────
+    LogosDialog {
+        id: keySheet
+        objectName: "giveKeyDialog"
+        title: "Give its unlock key · " + root.walletName(root.wallet)
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 40, 580)
+        closePolicy: root.working || submitting ? Popup.NoAutoClose : Popup.CloseOnEscape
+        property bool submitting: false
+        // Whether this opening started it, so an earlier scan's outcome isn't shown.
+        property bool started: false
+        onOpened: { submitting = false; started = false }
+
+        function line() {
+            if (!started) return ""
+            if (root.working) return "Scan the request in the Logos QR window with the wallet and confirm it, then hold its answer up to the camera."
+            if (root.scanning.state === "done") return "Unlock key given. The Signer app's Wallets tab shows how this wallet unlocks."
+            if (root.scanning.state === "failed") return "Not given: " + (root.scanning.error || "")
+            if (root.scanning.state === "cancelled") return "Stopped. Nothing was given."
+            return ""
+        }
+
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing.small
+            LogosText {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: "The wallet signs a message that moves no funds, and this computer works out the wallet's unlock key from its answer: the key it gives when it is added. The Signer app can then unlock this wallet with the wallet instead of a password."
+            }
+            LogosText {
+                objectName: "giveKeyLine"
+                Layout.fillWidth: true
+                visible: text !== ""
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                color: root.scanning.state === "failed" ? Theme.palette.error : Theme.palette.text
+                text: keySheet.line()
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                LogosButton {
+                    objectName: "giveKeyDone"
+                    text: "Done"
+                    visible: !root.working
+                    enabled: !keySheet.submitting
+                    onClicked: keySheet.close()
+                }
+                LogosButton {
+                    objectName: "giveKeyStop"
+                    text: "Stop"
+                    visible: root.working
+                    onClicked: root.backend.cancelScan()
+                }
+                Item { Layout.fillWidth: true }
+                LogosButton {
+                    objectName: "giveKeyButton"
+                    text: "Show the request"
+                    enabled: root.ready && !root.working && !keySheet.submitting && root.canGiveKey(root.wallet)
+                    onClicked: {
+                        keySheet.submitting = true
+                        keySheet.started = true
+                        logos.watch(root.backend.giveUnlockKey(root.selectedFingerprint),
+                                    function (ok) { keySheet.submitting = false })
+                    }
+                }
+            }
         }
     }
 
